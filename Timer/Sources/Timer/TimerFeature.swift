@@ -21,6 +21,9 @@ struct TimerFeature {
         var showAlert: Bool = false
         // Timer 가 살아있는지
         var isTimerRunning: Bool = false
+        
+        // app 이 background 로 진입한 시간
+        var appDidEnterBackgroundDate: Date?
 //        // Timer
 //        var timer: AnyCancellable?
 //        // 시간 범위 (0분~25분)
@@ -32,6 +35,8 @@ struct TimerFeature {
         case pauseOrResumeTimer
         case stopTimer
         case tick
+        case appDidEnterBackground
+        case appWillEnterForeground
     }
     
     
@@ -42,9 +47,9 @@ struct TimerFeature {
                 // timer 시작
                 state.isTimerRunning = true
                 return .run { send in
-                        for await _ in self.clock.timer(interval: .seconds(1)) {
-                            await send(.tick)
-                        }
+                    for await _ in self.clock.timer(interval: .seconds(1)) {
+                        await send(.tick)
+                    }
                 }.cancellable(id: "timer")
             case .pauseOrResumeTimer:
                 if state.isTimerRunning {
@@ -68,6 +73,17 @@ struct TimerFeature {
                     state.isTimerRunning = false
                     return .cancel(id: "timer")
                 }
+            case .appDidEnterBackground:
+                state.appDidEnterBackgroundDate = Date()
+                return .none
+            case .appWillEnterForeground:
+                guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
+                let calendar = Calendar.current
+                let difference = calendar.dateComponents([.second], from: previousDate, to: Date())
+                let seconds = difference.second!
+                print("Time diff:\(seconds)")
+                state.timeRemaining -= seconds
+                return .none
             }
         }
     }
