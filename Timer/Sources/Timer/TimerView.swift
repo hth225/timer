@@ -30,25 +30,27 @@ struct TimerView: View {
     }
     
     var body: some View {
-        VStack {
-            Text("\(viewStore.state.timeRemaining)")
-            Button(action: {
-                viewStore.send(.startTimer)
-            }) {
-                Text("Start Timer")
-                    .font(.headline)
-            }
-            Button(action: {
-                viewStore.send(.pauseOrResumeTimer)
-            }) {
-                Text(viewStore.state.isTimerRunning ? "Pause" : "Resume")
-                    .font(.headline)
-            }
-            Button(action: {
-                viewStore.send(.stopTimer)
-            }) {
-                Text("Stop timer")
-                    .font(.headline)
+        WithPerceptionTracking {
+            VStack {
+                Text("\(store.state.timeRemaining)")
+                Button(action: {
+                    viewStore.send(.startTimer)
+                }) {
+                    Text("Start Timer")
+                        .font(.headline)
+                }
+                Button(action: {
+                    viewStore.send(.pauseOrResumeTimer)
+                }) {
+                    Text(viewStore.state.isTimerRunning ? "Pause" : "Resume")
+                        .font(.headline)
+                }
+                Button(action: {
+                    viewStore.send(.stopTimer)
+                }) {
+                    Text("Stop timer")
+                        .font(.headline)
+                }
             }
         }
     }
