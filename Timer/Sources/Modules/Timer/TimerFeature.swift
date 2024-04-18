@@ -44,7 +44,7 @@ struct TimerFeature {
         case tick
         case appDidEnterBackground
         case appWillEnterForeground
-        case timeChanged(CGPoint)
+        case sliderChanged(CGPoint)
     }
     
     
@@ -71,14 +71,23 @@ struct TimerFeature {
                     })
                 }
             case .stopTimer:
+                state.showAlert = true
+                state.isTimerRunning = false
+                state.timeRemaining = 0
+                state.progress = 0.0
+                state.rotationAngle = Angle(degrees: 0)
                 return .cancel(id: "timer")
             case .tick:
                 if state.timeRemaining > 0 {
                     state.timeRemaining -= 1
+                    state.progress -= 0.00028
+                    state.rotationAngle -= Angle(degrees: 0.0948)
                     return .none
                 } else {
                     state.showAlert = true
                     state.isTimerRunning = false
+                    state.progress = 0.0
+                    state.rotationAngle = Angle(degrees: 0)
                     return .cancel(id: "timer")
                 }
             case .appDidEnterBackground:
@@ -92,7 +101,7 @@ struct TimerFeature {
                 print("Time diff:\(seconds)")
                 state.timeRemaining -= seconds
                 return .none
-            case let .timeChanged(location):
+            case let .sliderChanged(location):
                 // Create a Vector for the location (reversing the y-coordinate system on iOS)
                 let vector = CGVector(dx: location.x, dy: -location.y)
                 
@@ -108,11 +117,16 @@ struct TimerFeature {
                 // Update angle
                 state.rotationAngle = Angle(radians: positiveAngle)
                 
+                let currentTime = Int((state.progress * 3600))
+                
                 // Update time
-                if(state.timeRemaining != Int((state.progress * 3600).rounded())) {
-                    state.timeRemaining = Int((state.progress * 3600).rounded())
+                if(state.timeRemaining != (currentTime - currentTime.remainderReportingOverflow(dividingBy: 60).partialValue)) {
+                    // 1분 이하의 숫자 지우기
+                    state.timeRemaining = (currentTime - currentTime.remainderReportingOverflow(dividingBy: 60).partialValue)
+//                    state.timeRemaining -= state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue
                     
-                    if(state.timeRemaining.isMultiple(of: 5)) {
+                    // 5분(300초) 단위로 햅틱
+                    if(state.timeRemaining.isMultiple(of: 300)) {
                         HapticManager.instance.impact(style: .medium)
                     }
                 }

@@ -43,6 +43,7 @@ struct TimerView: View {
                                  "\(store.state.timeRemaining / 60):\(store.state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue)"
                                  : "\(store.state.timeRemaining / 60)")
                                 .font(.system(size: 78, weight: .bold, design:.rounded))
+                                .animation(.linear(duration: 0.1), value: store.state.timeRemaining)
                         }
                     
                     Circle()
@@ -51,6 +52,7 @@ struct TimerView: View {
                                 style: StrokeStyle(lineWidth: 20.0, lineCap: .round)
                         )
                         .rotationEffect(Angle(degrees: -90))
+                        .animation(.linear(duration: 0.05), value: store.state.progress)
                     
                     if(!store.state.isTimerRunning) {
                         Circle()
@@ -62,7 +64,7 @@ struct TimerView: View {
                             .gesture(
                                 DragGesture(minimumDistance: 0.0)
                                     .onChanged() { value in
-                                        store.send(.timeChanged(value.location))
+                                        store.send(.sliderChanged(value.location))
                                         point = value.location
                                     }
                             )
@@ -78,6 +80,11 @@ struct TimerView: View {
                 .padding(.horizontal, 16)
             
             Text("Progress:\(store.state.progress)")
+                .font(.title2)
+                .padding(.horizontal, 16)
+            
+            
+            Text("Progress:\(store.state.rotationAngle.degrees)")
                 .font(.title2)
                 .padding(.horizontal, 16)
             
