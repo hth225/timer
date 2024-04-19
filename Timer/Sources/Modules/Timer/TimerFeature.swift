@@ -38,6 +38,7 @@ struct TimerFeature {
     }
     
     enum Action {
+        case initTimer
         case startTimer
         case pauseOrResumeTimer
         case stopTimer
@@ -45,12 +46,18 @@ struct TimerFeature {
         case appDidEnterBackground
         case appWillEnterForeground
         case sliderChanged(CGPoint)
+        case sliderEnded
     }
     
     
     var body: some Reducer<State, Action> {
         Reduce{ state, action in
             switch action {
+            case .initTimer:
+                state.progress = Double(state.timeRemaining) * Constants.secondToProgress
+                // Positive angle 구해서 rotation angle 구하기
+                state.rotationAngle = Angle(radians: state.progress * (2.0 * .pi))
+                return .none
             case .startTimer:
                 // timer 시작
                 state.isTimerRunning = true
@@ -76,6 +83,8 @@ struct TimerFeature {
                 state.timeRemaining = 0
                 state.progress = 0.0
                 state.rotationAngle = Angle(degrees: 0)
+                // User defaults 도 초기화
+                UserDefaultsHelper.time = 0
                 return .cancel(id: "timer")
             case .tick:
                 if state.timeRemaining > 0 {
@@ -131,6 +140,10 @@ struct TimerFeature {
                     }
                 }
                 
+                return .none
+            case .sliderEnded:
+                // User defaults 에 저장
+                UserDefaultsHelper.time = state.timeRemaining
                 return .none
             }
         }

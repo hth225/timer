@@ -67,6 +67,9 @@ struct TimerView: View {
                                         store.send(.sliderChanged(value.location))
                                         point = value.location
                                     }
+                                    .onEnded() { _ in
+                                        store.send(.sliderEnded)
+                                    }
                             )
                     }
                 }
@@ -120,6 +123,9 @@ struct TimerView: View {
                 }
                 Spacer()
             }
+        }
+        .task {
+            store.send(.initTimer)
         }
     }
 }
