@@ -90,6 +90,7 @@ struct TimerFeature {
                 state.rotationAngle = Angle(degrees: 0)
                 // User defaults 도 초기화
                 UserDefaultsHelper.time = 0
+                UNUserNotificationCenter.current().removeAllPendingTimers()
                 return .cancel(id: "timer")
             case .tick:
                 if state.timeRemaining > 0 {

@@ -39,9 +39,9 @@ struct TimerView: View {
                     Circle()
                         .stroke(Color(hue: 0.0, saturation: 0.0, brightness: 0.9), lineWidth: 20.0)
                         .overlay() {
-                            Text(store.state.isTimerRunning ? 
-                                 "\(store.state.timeRemaining / 60):\(store.state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue)"
-                                 : "\(store.state.timeRemaining / 60)")
+                            Text(store.state.isTimerRunning ?
+                                 "\(store.state.timeRemaining / 60):\(String(format: "%02d", (store.state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue)))"
+                                 : "\((store.state.timeRemaining / 60))")
                                 .font(.system(size: 78, weight: .bold, design:.rounded))
                                 .animation(.linear(duration: 0.1), value: store.state.timeRemaining)
                         }
@@ -111,6 +111,7 @@ struct TimerView: View {
                         .foregroundStyle(.red)
                         .frame(width: 50, height: 50)
                 }
+                .disabled(store.state.timeRemaining <= 0)
                 Spacer()
                 Button(action: {
                     viewStore.send(.stopTimer)
@@ -121,6 +122,7 @@ struct TimerView: View {
                         .foregroundStyle(.red)
                         .frame(width: 50, height: 50)
                 }
+                .disabled(!store.state.isTimerRunning)
                 Spacer()
             }
         }
