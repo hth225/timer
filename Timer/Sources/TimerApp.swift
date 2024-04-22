@@ -8,6 +8,12 @@ struct TimerApp: App {
             TimerView(store: Store(initialState: TimerFeature.State(timeRemaining: UserDefaultsHelper.time)){
                 TimerFeature()
             })
+            .task {
+                // permission check
+                if (!(await PermissionMananger.notiPermissionStatus())) {
+                    try? await PermissionMananger.requestNotiPermission()
+                }
+            }
         }
     }
 }

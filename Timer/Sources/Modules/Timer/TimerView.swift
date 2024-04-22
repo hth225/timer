@@ -78,20 +78,20 @@ struct TimerView: View {
             .padding(.vertical, 40)
             .padding()
             
-            Text("Location:\(point.x)")
-                .font(.title2)
-                .padding(.horizontal, 16)
-            
-            Text("Progress:\(store.state.progress)")
-                .font(.title2)
-                .padding(.horizontal, 16)
-            
-            
-            Text("Progress:\(store.state.rotationAngle.degrees)")
-                .font(.title2)
-                .padding(.horizontal, 16)
-            
-            Text("\(store.state.timeRemaining)")
+//            Text("Location:\(point.x)")
+//                .font(.title2)
+//                .padding(.horizontal, 16)
+//            
+//            Text("Progress:\(store.state.progress)")
+//                .font(.title2)
+//                .padding(.horizontal, 16)
+//            
+//            
+//            Text("Progress:\(store.state.rotationAngle.degrees)")
+//                .font(.title2)
+//                .padding(.horizontal, 16)
+//            
+//            Text("\(store.state.timeRemaining)")
             
 //            Button(action: {
 //                viewStore.send(.startTimer)
@@ -126,6 +126,7 @@ struct TimerView: View {
         }
         .task {
             store.send(.initTimer)
+            UNUserNotificationCenter.current().addNoti(id: UUID().uuidString, time: 20)
         }
     }
 }

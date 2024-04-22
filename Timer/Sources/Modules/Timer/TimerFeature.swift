@@ -61,6 +61,11 @@ struct TimerFeature {
             case .startTimer:
                 // timer 시작
                 state.isTimerRunning = true
+                
+                // Local notification
+                UNUserNotificationCenter.current().removeAllPendingTimers()
+                UNUserNotificationCenter.current().addNoti(id: UUID().uuidString, time: state.timeRemaining)
+                
                 return .run { send in
                     for await _ in self.clock.timer(interval: .seconds(1)) {
                         await send(.tick)
@@ -93,10 +98,18 @@ struct TimerFeature {
                     state.rotationAngle -= Angle(degrees: 0.0948)
                     return .none
                 } else {
+                    // Timer end
                     state.showAlert = true
                     state.isTimerRunning = false
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
+                    // end sound
+                    do {
+                        try SoundManager.instance.playTimerEnd()
+                    } catch(let error) {
+                        print("Audio error :\(error)")
+                    }
+                    
                     return .cancel(id: "timer")
                 }
             case .appDidEnterBackground:
@@ -108,7 +121,14 @@ struct TimerFeature {
                 let difference = calendar.dateComponents([.second], from: previousDate, to: Date())
                 let seconds = difference.second!
                 print("Time diff:\(seconds)")
-                state.timeRemaining -= seconds
+                
+                if(state.timeRemaining >= seconds) {
+                    state.timeRemaining -= seconds
+                } else {
+                    state.timeRemaining = 0
+                }
+                
+                
                 return .none
             case let .sliderChanged(location):
                 // Create a Vector for the location (reversing the y-coordinate system on iOS)
