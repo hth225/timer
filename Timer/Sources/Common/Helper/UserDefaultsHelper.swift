@@ -14,4 +14,18 @@ struct UserDefaultsHelper {
         set { UserDefaults.standard.set(newValue, forKey: Constants.timeKey) }
     }
     
+    static var pomodoroRestTime: Int {
+        get { UserDefaults.standard.integer(forKey: Constants.pomodoroRestTimeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroRestTimeKey) }
+    }
+    
+    static var pomodoroLongRestInterval: Int {
+        get { UserDefaults.standard.integer(forKey: Constants.pomodoroLongRestIntervalKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLongRestIntervalKey) }
+    }
+    
+    static var pomodoroLongRestTime: Int {
+        get { UserDefaults.standard.integer(forKey: Constants.pomodoroLongRestTimeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLongRestTimeKey) }
+    }
 }

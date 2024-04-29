@@ -31,10 +31,10 @@ struct TimerFeature {
         // Circle slider rotation angle
         var rotationAngle = Angle(degrees: 0)
         
-//        // Timer
-//        var timer: AnyCancellable?
-//        // 시간 범위 (0분~25분)
-//        let durationRange = Array(0...1500)
+        // current Pomodoro state
+        var pomodoroState = PomodoroState.disabled
+        // Completed pomodoro count
+        var completedPomodoro = 0
     }
     
     enum Action {
@@ -47,6 +47,11 @@ struct TimerFeature {
         case appWillEnterForeground
         case sliderChanged(CGPoint)
         case sliderEnded
+        
+        // pomodoro 를 위한 tick action
+        case pomodoroTick
+        
+        case flipPomodoroState
     }
     
     
@@ -64,14 +69,25 @@ struct TimerFeature {
                 
                 // Local notification
                 UNUserNotificationCenter.current().removeAllPendingTimers()
-                UNUserNotificationCenter.current().addNoti(id: UUID().uuidString, time: state.timeRemaining)
                 
-                return .run { send in
-                    for await _ in self.clock.timer(interval: .seconds(1)) {
-                        await send(.tick)
-                    }
-                }.cancellable(id: "timer")
+                if(state.pomodoroState == PomodoroState.active) {
+                    state.pomodoroState = PomodoroState.focus
+                    UNUserNotificationCenter.current().addPomodoroNotifications(focusTime: state.timeRemaining)
+                    return .run { send in
+                        for await _ in self.clock.timer(interval: .seconds(1)) {
+                            await send(.pomodoroTick)
+                        }
+                    }.cancellable(id: "timer")
+                } else {
+                    UNUserNotificationCenter.current().addTimerNoti(id: UUID().uuidString, time: state.timeRemaining)
+                    return .run { send in
+                        for await _ in self.clock.timer(interval: .seconds(1)) {
+                            await send(.tick)
+                        }
+                    }.cancellable(id: "timer")
+                }
             case .pauseOrResumeTimer:
+                // MARK : POMODORO MODE
                 if state.isTimerRunning {
                     state.isTimerRunning = false
                     return .cancel(id: "timer")
@@ -91,6 +107,11 @@ struct TimerFeature {
                 // User defaults 도 초기화
                 UserDefaultsHelper.time = 0
                 UNUserNotificationCenter.current().removeAllPendingTimers()
+                
+                // Pomodoro state reset
+                if(state.pomodoroState == PomodoroState.focus || state.pomodoroState == PomodoroState.rest) {
+                    state.pomodoroState = PomodoroState.active
+                }
                 return .cancel(id: "timer")
             case .tick:
                 if state.timeRemaining > 0 {
@@ -99,9 +120,7 @@ struct TimerFeature {
                     state.rotationAngle -= Angle(degrees: 0.0948)
                     return .none
                 } else {
-                    // Timer end
-                    state.showAlert = true
-                    state.isTimerRunning = false
+                    // Timer end. Resetting indicator.
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
                     // end sound
@@ -128,7 +147,6 @@ struct TimerFeature {
                 } else {
                     state.timeRemaining = 0
                 }
-                
                 
                 return .none
             case let .sliderChanged(location):
@@ -165,6 +183,63 @@ struct TimerFeature {
             case .sliderEnded:
                 // User defaults 에 저장
                 UserDefaultsHelper.time = state.timeRemaining
+                return .none
+            case .pomodoroTick:
+                if state.timeRemaining > 0 {
+                    state.timeRemaining -= 1
+                    state.progress -= 0.00028
+                    state.rotationAngle -= Angle(degrees: 0.0948)
+                    return .none
+                } else {
+                    // Timer end
+                    state.showAlert = true
+//                    state.isTimerRunning = false
+                    state.progress = 0.0
+                    state.rotationAngle = Angle(degrees: 0)
+                    // end sound
+                    do {
+                        try SoundManager.instance.playTimerEnd()
+                    } catch(let error) {
+                        print("Audio error :\(error)")
+                    }
+                    
+                    // prev : focus
+                    // next : rest
+                    if(state.pomodoroState == PomodoroState.focus) {
+                        state.pomodoroState = PomodoroState.rest
+                        // 5min rest time
+                        state.timeRemaining = 300
+                        
+                        // reset UI
+                        state.progress = Double(state.timeRemaining) * Constants.secondToProgress
+                        // Positive angle 구해서 rotation angle 구하기
+                        state.rotationAngle = Angle(radians: state.progress * (2.0 * .pi))
+                        
+                        return .none
+                    }
+                    // prev : Rest
+                    // next : focus
+                    else if(state.pomodoroState == PomodoroState.rest){
+                        state.pomodoroState = PomodoroState.focus
+                        // focus time from UserDefaults
+                        state.timeRemaining = UserDefaultsHelper.time
+                        
+                        // reset UI
+                        state.progress = Double(state.timeRemaining) * Constants.secondToProgress
+                        // Positive angle 구해서 rotation angle 구하기
+                        state.rotationAngle = Angle(radians: state.progress * (2.0 * .pi))
+                        
+                        return .none
+                    } else {
+                        return .cancel(id: "timer")
+                    }
+                }
+            case .flipPomodoroState:
+                if(state.pomodoroState == PomodoroState.disabled) {
+                    state.pomodoroState = PomodoroState.active
+                } else if(state.pomodoroState == PomodoroState.active) {
+                    state.pomodoroState = PomodoroState.disabled
+                }
                 return .none
             }
         }

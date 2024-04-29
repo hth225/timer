@@ -35,6 +35,12 @@ struct TimerView: View {
     var body: some View {
         WithPerceptionTracking {
             VStack {
+                Button(action: {
+                    store.send(.flipPomodoroState)
+                }) {
+                    Text("\(store.state.pomodoroState)")
+                }
+                .padding(.bottom, 24)
                 ZStack {
                     Circle()
                         .stroke(Color(hue: 0.0, saturation: 0.0, brightness: 0.9), lineWidth: 20.0)
@@ -119,7 +125,7 @@ struct TimerView: View {
                     Image(systemName: "stop.fill")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(!store.state.isTimerRunning ? .gray :.red)
                         .frame(width: 50, height: 50)
                 }
                 .disabled(!store.state.isTimerRunning)
@@ -128,7 +134,6 @@ struct TimerView: View {
         }
         .task {
             store.send(.initTimer)
-            UNUserNotificationCenter.current().addNoti(id: UUID().uuidString, time: 20)
         }
     }
 }

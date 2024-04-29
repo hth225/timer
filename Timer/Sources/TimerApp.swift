@@ -13,6 +13,12 @@ struct TimerApp: App {
                 if (!(await PermissionMananger.notiPermissionStatus())) {
                     try? await PermissionMananger.requestNotiPermission()
                 }
+                
+                // set default userDefault values
+                UserDefaults.standard.register(defaults: [Constants.timeKey : 1500])
+                UserDefaults.standard.register(defaults: [Constants.pomodoroRestTimeKey : 300])
+                UserDefaults.standard.register(defaults: [Constants.pomodoroLongRestIntervalKey : 2])
+                UserDefaults.standard.register(defaults: [Constants.pomodoroLongRestTimeKey : 900])
             }
         }
     }
