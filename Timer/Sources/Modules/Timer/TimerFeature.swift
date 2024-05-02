@@ -35,6 +35,13 @@ struct TimerFeature {
         var pomodoroState = PomodoroState.disabled
         // Completed pomodoro count
         var completedPomodoro = 0
+        
+        // 세션 기록 (Pomodoro 용)
+        var sessionList: [SessionInfo]
+        
+        var focusTime: Int
+        var restTime: Int
+        var longRestTime: Int
     }
     
     enum Action {
@@ -72,6 +79,14 @@ struct TimerFeature {
                 
                 if(state.pomodoroState == PomodoroState.active) {
                     state.pomodoroState = PomodoroState.focus
+                    
+                    state.focusTime = UserDefaultsHelper.time
+                    state.restTime = UserDefaultsHelper.pomodoroRestTime
+                    state.longRestTime = UserDefaultsHelper.pomodoroLongRestTime
+                    
+                    // Array 에 첫번째 세션 등록
+                    state.sessionList = [SessionInfo(order: 1, type: SessionType.focus, state: SessionState.active, time: state.timeRemaining)]
+                    
                     UNUserNotificationCenter.current().addPomodoroNotifications(focusTime: state.timeRemaining)
                     return .run { send in
                         for await _ in self.clock.timer(interval: .seconds(1)) {
@@ -145,6 +160,32 @@ struct TimerFeature {
                 if(state.timeRemaining >= seconds) {
                     state.timeRemaining -= seconds
                 } else {
+                    // pomoro on
+                    if(state.pomodoroState != PomodoroState.disabled && state.pomodoroState != PomodoroState.active) {
+                        
+                        for _ in (0..Int(seconds / state.timeRemaining)) {
+                             // 전 세션이 focus 인지 아닌지
+                            if(state.sessionList.last?.type == SessionType.focus) {
+                                state.sessionList.append(SessionInfo(
+                                    order: state.sessionList.count + 1,
+                                    type: SessionType.rest,
+                                    state: SessionState.completed,
+                                    // interval 의 배수는 long rest time
+                                    time: state.sessionList.count + 1 % UserDefaultsHelper.pomodoroLongRestInterval == 0 ? state.longRestTime : state.restTime))
+                            } else {
+                                state.sessionList.append(SessionInfo(
+                                    order: state.sessionList.count + 1,
+                                    type: SessionType.focus,
+                                    state: SessionState.completed,
+                                    time: state.focusTime))
+                            }
+                            
+                        }
+                        
+                        // 세션 스킵하고 남은 시간 빼기
+                        state.timeRemaining = state.sessionList.last!.time - (seconds % state.timeRemaining)
+                        state.completedPomodoro = state.sessionList.count
+                    }
                     state.timeRemaining = 0
                 }
                 
@@ -196,6 +237,10 @@ struct TimerFeature {
 //                    state.isTimerRunning = false
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
+                    // 마지막 세션 completed 처리
+                    state.sessionList[(state.sessionList.count - 1)].state = SessionState.completed
+                    state.completedPomodoro += 1
+                    
                     // end sound
                     do {
                         try SoundManager.instance.playTimerEnd()
@@ -207,8 +252,17 @@ struct TimerFeature {
                     // next : rest
                     if(state.pomodoroState == PomodoroState.focus) {
                         state.pomodoroState = PomodoroState.rest
-                        // 5min rest time
-                        state.timeRemaining = 300
+                        
+                        if(state.completedPomodoro % UserDefaultsHelper.pomodoroLongRestInterval == 0) {
+                            // long rest time
+                            state.timeRemaining = UserDefaultsHelper.pomodoroLongRestTime
+                        } else {
+                            // rest time
+                            state.timeRemaining = UserDefaultsHelper.pomodoroRestTime
+                        }
+                        
+                        // 다음 휴식 세션 추가
+                        state.sessionList.append(SessionInfo(order: state.sessionList.count + 1, type: SessionType.rest, state: SessionState.active, time: state.timeRemaining))
                         
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
@@ -223,6 +277,9 @@ struct TimerFeature {
                         state.pomodoroState = PomodoroState.focus
                         // focus time from UserDefaults
                         state.timeRemaining = UserDefaultsHelper.time
+                        
+                        // 다음 집중 세션 추가
+                        state.sessionList.append(SessionInfo(order: state.sessionList.count + 1, type: SessionType.focus, state: SessionState.active, time: state.timeRemaining))
                         
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
