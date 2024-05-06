@@ -23,7 +23,7 @@ extension UNUserNotificationCenter {
         // request 만들기
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         
-        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+//        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
     
     func addTimerNoti(id: String, time: Int) {

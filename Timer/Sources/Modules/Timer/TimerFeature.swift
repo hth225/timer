@@ -36,12 +36,9 @@ struct TimerFeature {
         // Completed pomodoro count
         var completedPomodoro = 0
         
-        // 세션 기록 (Pomodoro 용)
-        var sessionList: [SessionInfo]
-        
-        var focusTime: Int
-        var restTime: Int
-        var longRestTime: Int
+        var focusTime: Int = 0
+        var restTime: Int = 0
+        var longRestTime: Int = 0
     }
     
     enum Action {
@@ -59,6 +56,8 @@ struct TimerFeature {
         case pomodoroTick
         
         case flipPomodoroState
+        
+        case appendSessionList(SessionType, SessionState, Int)
     }
     
     
@@ -83,9 +82,6 @@ struct TimerFeature {
                     state.focusTime = UserDefaultsHelper.time
                     state.restTime = UserDefaultsHelper.pomodoroRestTime
                     state.longRestTime = UserDefaultsHelper.pomodoroLongRestTime
-                    
-                    // Array 에 첫번째 세션 등록
-                    state.sessionList = [SessionInfo(order: 1, type: SessionType.focus, state: SessionState.active, time: state.timeRemaining)]
                     
                     UNUserNotificationCenter.current().addPomodoroNotifications(focusTime: state.timeRemaining)
                     return .run { send in
@@ -154,41 +150,88 @@ struct TimerFeature {
                 guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
                 let calendar = Calendar.current
                 let difference = calendar.dateComponents([.second], from: previousDate, to: Date())
-                let seconds = difference.second!
+                //                let seconds = difference.second!
+                var seconds = 2000
+                // *interval* 만큼의 단위가 얼마나 지났는지
+                var intervalCount = 0
                 print("Time diff:\(seconds)")
                 
                 if(state.timeRemaining >= seconds) {
                     state.timeRemaining -= seconds
+                    return .none
+                    
                 } else {
                     // pomoro on
                     if(state.pomodoroState != PomodoroState.disabled && state.pomodoroState != PomodoroState.active) {
                         
-                        for _ in (0..Int(seconds / state.timeRemaining)) {
-                             // 전 세션이 focus 인지 아닌지
-                            if(state.sessionList.last?.type == SessionType.focus) {
-                                state.sessionList.append(SessionInfo(
-                                    order: state.sessionList.count + 1,
-                                    type: SessionType.rest,
-                                    state: SessionState.completed,
-                                    // interval 의 배수는 long rest time
-                                    time: state.sessionList.count + 1 % UserDefaultsHelper.pomodoroLongRestInterval == 0 ? state.longRestTime : state.restTime))
-                            } else {
-                                state.sessionList.append(SessionInfo(
-                                    order: state.sessionList.count + 1,
-                                    type: SessionType.focus,
-                                    state: SessionState.completed,
-                                    time: state.focusTime))
-                            }
+                        // sec / timeRemaining 식 틀려서 다시 계산식 세워야함
+                        
+                        // interval 만큼의 세션 총 시간
+                        let totalTime = (state.focusTime + state.restTime) * UserDefaultsHelper.pomodoroLongRestInterval + (state.longRestTime - state.restTime)
+                        let withoutLongrestTotal = (state.focusTime + state.restTime) * UserDefaultsHelper.pomodoroLongRestInterval
+                        print("Interval total time: \(totalTime). focus\(state.focusTime) rest\(state.restTime) interval\(UserDefaultsHelper.pomodoroLongRestInterval) longrest\(state.longRestTime)")
+                        
+                        // interval 만큼의 시간이 지났는지 여부 확인. 지났다면 시간 계산이 다름.
+                        // 앞쪽에서 큰 단위의 시간 절삭하기.
+                        if(totalTime <= seconds) {
+                            let count = Int(seconds / totalTime)
+                            seconds -= count * totalTime
+                            state.completedPomodoro += count * UserDefaultsHelper.pomodoroLongRestInterval
                             
+                            print("Over interval")
+                            print("Session count:\(count)")
+                            print("remain count:\(seconds)")
+                            
+                            intervalCount += count
+                            print("Interval count:\(intervalCount)")
                         }
                         
-                        // 세션 스킵하고 남은 시간 빼기
-                        state.timeRemaining = state.sessionList.last!.time - (seconds % state.timeRemaining)
-                        state.completedPomodoro = state.sessionList.count
+                        // interval 만큼의 시간이 지난게 아니면 longRest 제외한 시간이 지났는지 확인 해야함.
+                        
+                        // long rest 까지 도달하지 못함. interval 안쪽.
+                        if(withoutLongrestTotal >= seconds) {
+                            let count = Int(seconds / (state.focusTime + state.restTime))
+                            // 남은 시간
+                            let remain = seconds - ((state.focusTime + state.restTime) * count)
+                            state.completedPomodoro += count
+                            
+                            print("Under interval")
+                            print("count:\(count)")
+                            print("remain count:\(remain)")
+                            
+                            if(remain <= state.focusTime) {
+                                print("FocusSession. time left:\(state.focusTime - remain)")
+                                state.timeRemaining = state.focusTime - remain
+                                state.pomodoroState = PomodoroState.focus
+                            } else {
+                                print("Rest session. time left:\(state.restTime - (remain - state.focusTime))")
+                                state.timeRemaining = state.restTime - (remain - state.focusTime)
+                                state.pomodoroState = PomodoroState.rest
+                            }
+                        } else {
+                            // long rest 까지 도달함. interval 안쪽.
+                            let count = UserDefaultsHelper.pomodoroLongRestInterval
+                            let remain = state.longRestTime - (seconds % ((state.focusTime + state.restTime) * count))
+                            state.completedPomodoro += count
+                            print("Under interval. Over long rest")
+                            print("count:\(count)")
+                            print("remain count:\(remain)")
+                            
+                            if(remain <= state.focusTime) {
+                                print("FocusSession. time left:\(state.focusTime - remain)")
+                                state.timeRemaining = state.focusTime - remain
+                                state.pomodoroState = PomodoroState.focus
+                            } else {
+                                print("Rest session. time left:\(state.restTime - (remain - state.focusTime))")
+                                state.timeRemaining = state.restTime - (remain - state.focusTime)
+                                state.pomodoroState = PomodoroState.rest
+                            }
+                        }
+                    } else {
+                        state.timeRemaining = 0
+                        
                     }
-                    state.timeRemaining = 0
                 }
-                
                 return .none
             case let .sliderChanged(location):
                 // Create a Vector for the location (reversing the y-coordinate system on iOS)
@@ -297,6 +340,13 @@ struct TimerFeature {
                 } else if(state.pomodoroState == PomodoroState.active) {
                     state.pomodoroState = PomodoroState.disabled
                 }
+                return .none
+            case let .appendSessionList(type, state, time):
+//                state.sessionList.append(SessionInfo(
+//                    order: state.sessionList.count + 1,
+//                    type: type,
+//                    state: state,
+//                    time: time))
                 return .none
             }
         }

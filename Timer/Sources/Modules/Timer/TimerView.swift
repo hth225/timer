@@ -35,6 +35,8 @@ struct TimerView: View {
     var body: some View {
         WithPerceptionTracking {
             VStack {
+                Text("Completed: \(store.state.completedPomodoro)")
+                    .padding(.bottom, 8)
                 Button(action: {
                     store.send(.flipPomodoroState)
                 }) {
