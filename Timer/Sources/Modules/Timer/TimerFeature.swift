@@ -280,8 +280,6 @@ struct TimerFeature {
 //                    state.isTimerRunning = false
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
-                    // 마지막 세션 completed 처리
-                    state.sessionList[(state.sessionList.count - 1)].state = SessionState.completed
                     state.completedPomodoro += 1
                     
                     // end sound
@@ -303,10 +301,6 @@ struct TimerFeature {
                             // rest time
                             state.timeRemaining = UserDefaultsHelper.pomodoroRestTime
                         }
-                        
-                        // 다음 휴식 세션 추가
-                        state.sessionList.append(SessionInfo(order: state.sessionList.count + 1, type: SessionType.rest, state: SessionState.active, time: state.timeRemaining))
-                        
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
                         // Positive angle 구해서 rotation angle 구하기
@@ -320,10 +314,6 @@ struct TimerFeature {
                         state.pomodoroState = PomodoroState.focus
                         // focus time from UserDefaults
                         state.timeRemaining = UserDefaultsHelper.time
-                        
-                        // 다음 집중 세션 추가
-                        state.sessionList.append(SessionInfo(order: state.sessionList.count + 1, type: SessionType.focus, state: SessionState.active, time: state.timeRemaining))
-                        
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
                         // Positive angle 구해서 rotation angle 구하기
