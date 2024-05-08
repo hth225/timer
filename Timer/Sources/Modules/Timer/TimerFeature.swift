@@ -150,8 +150,8 @@ struct TimerFeature {
                 guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
                 let calendar = Calendar.current
                 let difference = calendar.dateComponents([.second], from: previousDate, to: Date())
-                //                let seconds = difference.second!
-                var seconds = 2000
+                var seconds = difference.second!
+                //                var seconds = 2000
                 // *interval* 만큼의 단위가 얼마나 지났는지
                 var intervalCount = 0
                 print("Time diff:\(seconds)")

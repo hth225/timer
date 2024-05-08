@@ -35,8 +35,16 @@ struct TimerView: View {
     var body: some View {
         WithPerceptionTracking {
             VStack {
-                Text("Completed: \(store.state.completedPomodoro)")
-                    .padding(.bottom, 8)
+                Button(action: {
+                    UNUserNotificationCenter.current().getPendingNotificationRequests(completionHandler: { results in
+                        results.forEach { element in
+                            print("Pending id:\(element.identifier)")
+                        }
+                    })
+                }) {
+                    Text("Completed: \(store.state.completedPomodoro)")
+                        .padding(.bottom, 8)
+                }
                 Button(action: {
                     store.send(.flipPomodoroState)
                 }) {
