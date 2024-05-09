@@ -87,6 +87,8 @@ extension UNUserNotificationCenter {
     
     func removeAllPendingTimers() {
         removeAllPendingNotificationRequests()
+        // clear Userdefaults info
+        UserDefaultsHelper.pomodoroLatestNotiDate = nil
     }
     
     func addPomodoroNotifications(focusTime: Int) {
@@ -95,7 +97,7 @@ extension UNUserNotificationCenter {
         let shortRestTime = UserDefaultsHelper.pomodoroRestTime
         
         // 로컬노티는 128개가 최대갯수 제한..
-        var pomodoroNotiList: [Pomodoro] = Array(1...24).map { index in
+        var pomodoroNotiList: [Pomodoro] = Array(1...10).map { index in
             // 3의 배수 pomodoro 는 long rest.
             if(index % interval == 0) {
                 return Pomodoro(id: index, focusTime: focusTime, restTime: longRestTime)
@@ -136,6 +138,7 @@ extension UNUserNotificationCenter {
             
             // Update latest queued date
             latestDateComponent = restDate
+            UserDefaultsHelper.pomodoroLatestNotiDate = latestDateComponent
         }
         
 //        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
@@ -146,5 +149,54 @@ extension UNUserNotificationCenter {
 //            })
 //            
 //        }
+    }
+    func addNextPomodoroOnBackground() {
+        let interval = (UserDefaultsHelper.pomodoroLongRestInterval + 1)
+        let longRestTime = UserDefaultsHelper.pomodoroLongRestTime
+        let shortRestTime = UserDefaultsHelper.pomodoroRestTime
+        let focusTime = UserDefaultsHelper.time
+        let latestNotiDate = UserDefaultsHelper.pomodoroLatestNotiDate
+        let latestIndex = UserDefaultsHelper.pomodoroLatestAddedIndex
+        
+        // 마지막 index 에서 10개 더 생성
+        var pomodoroNotiList: [Pomodoro] = Array((latestIndex + 1)...(latestIndex + 11)).map { index in
+            // 3의 배수 pomodoro 는 long rest.
+            if(index % interval == 0) {
+                return Pomodoro(id: index, focusTime: focusTime, restTime: longRestTime)
+            } else {
+                return Pomodoro(id: index, focusTime: focusTime, restTime: shortRestTime)
+            }
+        }
+        
+        // 1개 pomodoro 총 시간(long rest X)
+        let pomodoroTotalTime = pomodoroNotiList.first!.focusTime + pomodoroNotiList.first!.restTime
+        
+        let calendar = Calendar.current
+        
+        // add notificaion to queue
+        pomodoroNotiList.forEach { pomodoro in
+            // interval 만큼 묶었을때
+            // session = interval 만큼 묶인 단위
+            
+            // 현재까지 몇개의 long rest 가 있었는지
+            let longRestCount = Int(pomodoro.id / interval)
+            
+            // 현재 뽀로도로까지 걸린 시간 (현재 podmodoro id * pomodoro time + 쉬는시간 두종류의 차 * 긴 휴식 카운트)
+            let distance = (pomodoro.id) *  pomodoroTotalTime + (longRestTime - shortRestTime) * longRestCount
+            
+            let focusDate = latestNotiDate!.addingTimeInterval(TimeInterval(focusTime))
+            let restDate: Date =
+                pomodoro.id % interval == 0 ? focusDate.addingTimeInterval(TimeInterval(longRestTime)) : focusDate.addingTimeInterval(TimeInterval(shortRestTime))
+            
+            let focusDateComponent = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: focusDate)
+            let restDateComponent = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: restDate)
+            
+            
+            self.addPomodoroNoti(focus: PomodoroNotiInfo(pomodoroID: pomodoro.id, date: focusDateComponent, title: "Focus Session Completed", body: "\(Int((distance-pomodoro.restTime)/60)) Minutes"), rest: PomodoroNotiInfo(pomodoroID: pomodoro.id, date: restDateComponent, title: "Rest Session Completed", body: "\(pomodoro.id) pomodoro completed"))
+            
+            print("Backgroudn noti queued")
+            // Update latest queued date
+            UserDefaultsHelper.pomodoroLatestNotiDate = restDate
+        }
     }
 }

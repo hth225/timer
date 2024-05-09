@@ -28,4 +28,31 @@ struct UserDefaultsHelper {
         get { UserDefaults.standard.integer(forKey: Constants.pomodoroLongRestTimeKey) }
         set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLongRestTimeKey) }
     }
+    
+    static var pomodoroLatestNotiDate: Date? {
+        get {
+            let result = UserDefaults.standard.string(forKey: Constants.pomodoroLatestNotiDate)
+            guard let stringDate = result else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZ"
+            
+            return formatter.date(from: stringDate)!
+        }
+        set {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZ"
+            
+            guard let value = newValue else {
+                UserDefaults.standard.removeObject(forKey: Constants.pomodoroLatestNotiDate)
+                return
+            }
+            
+            UserDefaults.standard.set(formatter.string(from: value), forKey: Constants.pomodoroLatestNotiDate)
+        }
+    }
+    
+    static var pomodoroLatestAddedIndex: Int {
+        get { UserDefaults.standard.integer(forKey: Constants.pomodoroLatestAddedIndex) }
+        set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLatestAddedIndex) }
+    }
 }

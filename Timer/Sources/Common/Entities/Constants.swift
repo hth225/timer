@@ -17,4 +17,9 @@ struct Constants {
     // Time related
     static let secondToProgress = 0.00028
     static let secondToAngle = Angle(degrees: 0.0948)
+    
+    // background refresh
+    static let backgroundTaskIdentifier = "io.tuist.Timer-background.notification"
+    static let pomodoroLatestNotiDate = "pomodoroLatestNotiDate"
+    static let pomodoroLatestAddedIndex = "pomodoroLatestAddedIndex"
 }
