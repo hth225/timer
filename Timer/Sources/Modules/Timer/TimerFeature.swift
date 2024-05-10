@@ -145,7 +145,9 @@ struct TimerFeature {
                 }
             case .appDidEnterBackground:
                 state.appDidEnterBackgroundDate = Date()
-                BackgroundTaskHelper().scheduleAppRefresh()
+                if(state.pomodoroState != PomodoroState.disabled) {
+                    BackgroundTaskHelper().scheduleAppRefresh()
+                }
                 return .none
             case .appWillEnterForeground:
                 guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
