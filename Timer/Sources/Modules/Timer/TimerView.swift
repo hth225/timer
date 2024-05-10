@@ -117,17 +117,20 @@ struct TimerView: View {
 //                    .frame(width: 50, height: 50)
 //            }
             HStack {
-                Spacer()
-                Button(action: {
-                    viewStore.send(.pauseOrResumeTimer)
-                }) {
-                    Image(systemName: viewStore.state.isTimerRunning ? "pause.fill" : "play.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .foregroundStyle(.red)
-                        .frame(width: 50, height: 50)
+                // Pomodoro 이며, timer 작동중이면 일시정지 숨기기.
+                if(!(store.state.pomodoroState != PomodoroState.disabled && store.state.isTimerRunning)) {
+                    Spacer()
+                    Button(action: {
+                        viewStore.send(.pauseOrResumeTimer)
+                    }) {
+                        Image(systemName: viewStore.state.isTimerRunning ? "pause.fill" : "play.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundStyle(.red)
+                            .frame(width: 50, height: 50)
+                    }
+                    .disabled(store.state.timeRemaining <= 0)
                 }
-                .disabled(store.state.timeRemaining <= 0)
                 Spacer()
                 Button(action: {
                     viewStore.send(.stopTimer)
