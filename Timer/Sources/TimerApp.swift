@@ -1,9 +1,11 @@
 import SwiftUI
 import ComposableArchitecture
 import BackgroundTasks
+import Combine
 
 @main
 struct TimerApp: App {
+    
     var body: some Scene {
         WindowGroup {
             TimerView(store: Store(initialState: TimerFeature.State(timeRemaining: UserDefaultsHelper.time)){
@@ -24,32 +26,21 @@ struct TimerApp: App {
                 UserDefaults.standard.register(defaults: [Constants.pomodoroLongRestTimeKey : 900])
                 
                 BGTaskScheduler.shared.register(forTaskWithIdentifier: Constants.backgroundTaskIdentifier, using: nil) { task in
-                    print("BackgroundProcessingTaskScheduler is executed now")
                     self.handleAppRefresh(task: task as! BGAppRefreshTask)
                 }
             }
         }
     }
     
-    func scheduleAppRefresh() {
-        let request = BGAppRefreshTaskRequest(identifier: Constants.backgroundTaskIdentifier)
-        // Fetch no earlier than 15 minutes from now.
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
-        
-        do {
-            try BGTaskScheduler.shared.submit(request)
-        } catch {
-            print("Could not schedule app refresh: \(error)")
-        }
-    }
-    
     func handleAppRefresh(task: BGAppRefreshTask) {
         // Schedule a new refresh task.
-        scheduleAppRefresh()
+        BackgroundTaskHelper().scheduleAppRefresh()
         
         
         // Create an operation that performs the main part of the background task.
-        UNUserNotificationCenter.current().addNextPomodoroOnBackground()
+        DispatchQueue.global().async {
+            UNUserNotificationCenter.current().addNextPomodoroOnBackground()
+        }
         
         // Provide the background task with an expiration handler that cancels the operation.
         //       task.expirationHandler = {

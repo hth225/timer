@@ -155,7 +155,7 @@ extension UNUserNotificationCenter {
         let longRestTime = UserDefaultsHelper.pomodoroLongRestTime
         let shortRestTime = UserDefaultsHelper.pomodoroRestTime
         let focusTime = UserDefaultsHelper.time
-        let latestNotiDate = UserDefaultsHelper.pomodoroLatestNotiDate
+        var latestNotiDate = UserDefaultsHelper.pomodoroLatestNotiDate ?? Date()
         let latestIndex = UserDefaultsHelper.pomodoroLatestAddedIndex
         
         // 마지막 index 에서 10개 더 생성
@@ -184,7 +184,7 @@ extension UNUserNotificationCenter {
             // 현재 뽀로도로까지 걸린 시간 (현재 podmodoro id * pomodoro time + 쉬는시간 두종류의 차 * 긴 휴식 카운트)
             let distance = (pomodoro.id) *  pomodoroTotalTime + (longRestTime - shortRestTime) * longRestCount
             
-            let focusDate = latestNotiDate!.addingTimeInterval(TimeInterval(focusTime))
+            let focusDate = latestNotiDate.addingTimeInterval(TimeInterval(focusTime))
             let restDate: Date =
                 pomodoro.id % interval == 0 ? focusDate.addingTimeInterval(TimeInterval(longRestTime)) : focusDate.addingTimeInterval(TimeInterval(shortRestTime))
             
@@ -195,8 +195,11 @@ extension UNUserNotificationCenter {
             self.addPomodoroNoti(focus: PomodoroNotiInfo(pomodoroID: pomodoro.id, date: focusDateComponent, title: "Focus Session Completed", body: "\(Int((distance-pomodoro.restTime)/60)) Minutes"), rest: PomodoroNotiInfo(pomodoroID: pomodoro.id, date: restDateComponent, title: "Rest Session Completed", body: "\(pomodoro.id) pomodoro completed"))
             
             print("Backgroudn noti queued")
-            // Update latest queued date
-            UserDefaultsHelper.pomodoroLatestNotiDate = restDate
+            
+            latestNotiDate = restDate
         }
+        
+        // Update latest queued date
+        UserDefaultsHelper.pomodoroLatestNotiDate = latestNotiDate
     }
 }

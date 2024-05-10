@@ -145,6 +145,7 @@ struct TimerFeature {
                 }
             case .appDidEnterBackground:
                 state.appDidEnterBackgroundDate = Date()
+                BackgroundTaskHelper().scheduleAppRefresh()
                 return .none
             case .appWillEnterForeground:
                 guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
