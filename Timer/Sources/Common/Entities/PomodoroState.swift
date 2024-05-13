@@ -8,13 +8,13 @@
 import Foundation
 
 // MARK: Pomodoro state type.
-enum PomodoroState {
-    /// active. But, not started
-    case active
-    /// focus session
-    case focus
-    /// rest session
-    case rest
+enum PomodoroState: Int, Decodable, Encodable{
     /// Pomodoro mode disabled
-    case disabled
+    case disabled = 0
+    /// active. But, not started
+    case active = 1
+    /// focus session
+    case focus = 2
+    /// rest session
+    case rest = 3
 }

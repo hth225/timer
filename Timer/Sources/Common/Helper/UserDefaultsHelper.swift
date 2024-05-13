@@ -55,4 +55,9 @@ struct UserDefaultsHelper {
         get { UserDefaults.standard.integer(forKey: Constants.pomodoroLatestAddedIndex) }
         set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLatestAddedIndex) }
     }
+    
+    static var pomodoroState: PomodoroState {
+        get { PomodoroState(rawValue: UserDefaults.standard.integer(forKey: Constants.pomodoroStateKey)) ?? PomodoroState.disabled }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: Constants.pomodoroStateKey) }
+    }
 }

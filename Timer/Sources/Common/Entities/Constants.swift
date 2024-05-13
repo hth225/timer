@@ -10,6 +10,8 @@ import SwiftUI
 
 struct Constants {
     static let timeKey = "timeKey"
+    
+    static let pomodoroStateKey = "pomodoroStateKey"
     static let pomodoroRestTimeKey = "pomodoroRestTimeKey"
     static let pomodoroLongRestIntervalKey = "pomodoroLongRestIntervalKey"
     static let pomodoroLongRestTimeKey = " pomodoroLongRestTimeKey"

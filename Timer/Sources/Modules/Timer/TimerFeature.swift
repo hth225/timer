@@ -333,13 +333,7 @@ struct TimerFeature {
                 } else if(state.pomodoroState == PomodoroState.active) {
                     state.pomodoroState = PomodoroState.disabled
                 }
-                return .none
-            case let .appendSessionList(type, state, time):
-//                state.sessionList.append(SessionInfo(
-//                    order: state.sessionList.count + 1,
-//                    type: type,
-//                    state: state,
-//                    time: time))
+                UserDefaultsHelper.pomodoroState = state.pomodoroState
                 return .none
             }
         }
