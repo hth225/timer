@@ -97,7 +97,7 @@ extension UNUserNotificationCenter {
         let shortRestTime = UserDefaultsHelper.pomodoroRestTime
         
         // 로컬노티는 128개가 최대갯수 제한..
-        var pomodoroNotiList: [Pomodoro] = Array(1...10).map { index in
+        let pomodoroNotiList: [Pomodoro] = Array(1...interval).map { index in
             // 3의 배수 pomodoro 는 long rest.
             if(index % interval == 0) {
                 return Pomodoro(id: index, focusTime: focusTime, restTime: longRestTime)
@@ -138,8 +138,10 @@ extension UNUserNotificationCenter {
             
             // Update latest queued date
             latestDateComponent = restDate
-            UserDefaultsHelper.pomodoroLatestNotiDate = latestDateComponent
         }
+        
+        UserDefaultsHelper.pomodoroLatestAddedIndex = interval
+        UserDefaultsHelper.pomodoroLatestNotiDate = latestDateComponent
         
 //        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
 //            self.getPendingNotificationRequests(completionHandler: { results in
@@ -150,7 +152,7 @@ extension UNUserNotificationCenter {
 //            
 //        }
     }
-    func addNextPomodoroOnBackground() {
+    func addNextPomodoroOnBackground(_ amount: Int?) {
         let interval = (UserDefaultsHelper.pomodoroLongRestInterval + 1)
         let longRestTime = UserDefaultsHelper.pomodoroLongRestTime
         let shortRestTime = UserDefaultsHelper.pomodoroRestTime
@@ -158,8 +160,8 @@ extension UNUserNotificationCenter {
         var latestNotiDate = UserDefaultsHelper.pomodoroLatestNotiDate ?? Date()
         let latestIndex = UserDefaultsHelper.pomodoroLatestAddedIndex
         
-        // 마지막 index 에서 10개 더 생성
-        var pomodoroNotiList: [Pomodoro] = Array((latestIndex + 1)...(latestIndex + 11)).map { index in
+        // 마지막 index 에서 10개(or amount) 더 생성
+        let pomodoroNotiList: [Pomodoro] = Array((latestIndex + 1)...(latestIndex + (amount ?? 11))).map { index in
             // 3의 배수 pomodoro 는 long rest.
             if(index % interval == 0) {
                 return Pomodoro(id: index, focusTime: focusTime, restTime: longRestTime)
@@ -200,6 +202,7 @@ extension UNUserNotificationCenter {
         }
         
         // Update latest queued date
+        UserDefaultsHelper.pomodoroLatestAddedIndex = (latestIndex + (amount ?? 11))
         UserDefaultsHelper.pomodoroLatestNotiDate = latestNotiDate
     }
 }

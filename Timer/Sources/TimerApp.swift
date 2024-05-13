@@ -39,7 +39,7 @@ struct TimerApp: App {
         
         // Create an operation that performs the main part of the background task.
         DispatchQueue.global().async {
-            UNUserNotificationCenter.current().addNextPomodoroOnBackground()
+            UNUserNotificationCenter.current().addNextPomodoroOnBackground(10)
         }
         
         // Provide the background task with an expiration handler that cancels the operation.
