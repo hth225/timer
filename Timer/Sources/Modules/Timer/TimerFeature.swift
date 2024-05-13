@@ -25,6 +25,7 @@ struct TimerFeature {
         
         // app 이 background 로 진입한 시간
         var appDidEnterBackgroundDate: Date?
+        var appDidEnterBackground: Bool = false
         
         // Circle slider progress. (max: 1.0)
         var progress = 0.0
@@ -56,8 +57,6 @@ struct TimerFeature {
         case pomodoroTick
         
         case flipPomodoroState
-        
-        case appendSessionList(SessionType, SessionState, Int)
     }
     
     
@@ -134,22 +133,28 @@ struct TimerFeature {
                     // Timer end. Resetting indicator.
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
-                    // end sound
-                    do {
-                        try SoundManager.instance.playTimerEnd()
-                    } catch(let error) {
-                        print("Audio error :\(error)")
+                    
+                    if(!state.appDidEnterBackground) {
+                        // end sound
+                        do {
+                            try SoundManager.instance.playTimerEnd()
+                        } catch(let error) {
+                            print("Audio error :\(error)")
+                        }
+                        
                     }
                     
                     return .cancel(id: "timer")
                 }
             case .appDidEnterBackground:
                 state.appDidEnterBackgroundDate = Date()
+                state.appDidEnterBackground = true
                 if(state.pomodoroState != PomodoroState.disabled) {
                     BackgroundTaskHelper().scheduleAppRefresh()
                 }
                 return .none
             case .appWillEnterForeground:
+                state.appDidEnterBackground = false
                 guard let previousDate = state.appDidEnterBackgroundDate else { return .none }
                 let calendar = Calendar.current
                 let difference = calendar.dateComponents([.second], from: previousDate, to: Date())
@@ -285,11 +290,13 @@ struct TimerFeature {
                     state.rotationAngle = Angle(degrees: 0)
                     state.completedPomodoro += 1
                     
-                    // end sound
-                    do {
-                        try SoundManager.instance.playTimerEnd()
-                    } catch(let error) {
-                        print("Audio error :\(error)")
+                    if(!state.appDidEnterBackground) {
+                        // end sound
+                        do {
+                            try SoundManager.instance.playTimerEnd()
+                        } catch(let error) {
+                            print("Audio error :\(error)")
+                        }
                     }
                     
                     // prev : focus
