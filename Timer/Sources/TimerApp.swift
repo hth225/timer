@@ -8,8 +8,11 @@ struct TimerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            TimerView(store: Store(initialState: TimerFeature.State(timeRemaining: UserDefaultsHelper.time)){
-                TimerFeature()
+//            TimerView(store: Store(initialState: TimerFeature.State(timeRemaining: UserDefaultsHelper.time)){
+//                TimerFeature()
+//            })
+            SettingView(store: Store(initialState: SettingFeature.State()){
+                SettingFeature()
             })
             .task {
                 // permission check
@@ -20,10 +23,13 @@ struct TimerApp: App {
             .onAppear {
                 
                 // set default userDefault values
-                UserDefaults.standard.register(defaults: [Constants.timeKey : 1500])
-                UserDefaults.standard.register(defaults: [Constants.pomodoroRestTimeKey : 300])
-                UserDefaults.standard.register(defaults: [Constants.pomodoroLongRestIntervalKey : 2])
-                UserDefaults.standard.register(defaults: [Constants.pomodoroLongRestTimeKey : 900])
+                UserDefaults.standard.register(defaults: [
+                    Constants.timeKey : 1500,
+                    Constants.pomodoroFocusTimeKey : 1500,
+                    Constants.pomodoroRestTimeKey : 300,
+                    Constants.pomodoroLongRestIntervalKey : 3,
+                    Constants.pomodoroLongRestTimeKey : 900,
+                ])
                 
                 BGTaskScheduler.shared.register(forTaskWithIdentifier: Constants.backgroundTaskIdentifier, using: nil) { task in
                     self.handleAppRefresh(task: task as! BGAppRefreshTask)
