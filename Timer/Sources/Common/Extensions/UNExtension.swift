@@ -97,7 +97,7 @@ extension UNUserNotificationCenter {
         let shortRestTime = UserDefaultsHelper.pomodoroRestTime
         
         // 로컬노티는 128개가 최대갯수 제한..
-        let pomodoroNotiList: [Pomodoro] = Array(1...interval).map { index in
+        let pomodoroNotiList: [Pomodoro] = Array(1...interval * 3).map { index in
             // 3의 배수 pomodoro 는 long rest.
             if(index % interval == 0) {
                 return Pomodoro(id: index, focusTime: focusTime, restTime: longRestTime)

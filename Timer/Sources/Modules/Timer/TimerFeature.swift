@@ -40,6 +40,7 @@ struct TimerFeature {
         var focusTime: Int = 0
         var restTime: Int = 0
         var longRestTime: Int = 0
+        var pomodoroInterval = 0
     }
     
     enum Action {
@@ -78,9 +79,10 @@ struct TimerFeature {
                 if(state.pomodoroState == PomodoroState.active) {
                     state.pomodoroState = PomodoroState.focus
                     
-                    state.focusTime = UserDefaultsHelper.time
+                    state.focusTime = UserDefaultsHelper.pomodoroFocusTime
                     state.restTime = UserDefaultsHelper.pomodoroRestTime
                     state.longRestTime = UserDefaultsHelper.pomodoroLongRestTime
+                    state.pomodoroInterval = UserDefaultsHelper.pomodoroLongRestInterval
                     
                     UNUserNotificationCenter.current().addPomodoroNotifications(focusTime: state.timeRemaining)
                     return .run { send in
@@ -172,19 +174,17 @@ struct TimerFeature {
                     // pomoro on
                     if(state.pomodoroState != PomodoroState.disabled && state.pomodoroState != PomodoroState.active) {
                         
-                        // sec / timeRemaining 식 틀려서 다시 계산식 세워야함
-                        
                         // interval 만큼의 세션 총 시간
-                        let totalTime = (state.focusTime + state.restTime) * UserDefaultsHelper.pomodoroLongRestInterval + (state.longRestTime - state.restTime)
-                        let withoutLongrestTotal = (state.focusTime + state.restTime) * UserDefaultsHelper.pomodoroLongRestInterval
-                        print("Interval total time: \(totalTime). focus\(state.focusTime) rest\(state.restTime) interval\(UserDefaultsHelper.pomodoroLongRestInterval) longrest\(state.longRestTime)")
+                        let totalTime = (state.focusTime + state.restTime) * state.pomodoroInterval + (state.longRestTime - state.restTime)
+                        let withoutLongrestTotal = (state.focusTime + state.restTime) * state.pomodoroInterval
+                        print("Interval total time: \(totalTime). focus\(state.focusTime) rest\(state.restTime) interval\(state.pomodoroInterval) longrest\(state.longRestTime)")
                         
                         // interval 만큼의 시간이 지났는지 여부 확인. 지났다면 시간 계산이 다름.
                         // 앞쪽에서 큰 단위의 시간 절삭하기.
                         if(totalTime <= seconds) {
                             let count = Int(seconds / totalTime)
                             seconds -= count * totalTime
-                            state.completedPomodoro += count * UserDefaultsHelper.pomodoroLongRestInterval
+                            state.completedPomodoro += count * state.pomodoroInterval
                             
                             print("Over interval")
                             print("Session count:\(count)")
@@ -218,7 +218,7 @@ struct TimerFeature {
                             }
                         } else {
                             // long rest 까지 도달함. interval 안쪽.
-                            let count = UserDefaultsHelper.pomodoroLongRestInterval
+                            let count = state.pomodoroInterval
                             let remain = state.longRestTime - (seconds % ((state.focusTime + state.restTime) * count))
                             state.completedPomodoro += count
                             print("Under interval. Over long rest")
@@ -274,7 +274,12 @@ struct TimerFeature {
                 return .none
             case .sliderEnded:
                 // User defaults 에 저장
-                UserDefaultsHelper.time = state.timeRemaining
+                // Pomodoro 모드와 일반 타이머 모드는 따로 저장한다.
+                if(state.pomodoroState != PomodoroState.disabled) {
+                    UserDefaultsHelper.pomodoroFocusTime = state.timeRemaining
+                } else {
+                    UserDefaultsHelper.time = state.timeRemaining
+                }
                 return .none
             case .pomodoroTick:
                 if state.timeRemaining > 0 {
@@ -304,12 +309,12 @@ struct TimerFeature {
                     if(state.pomodoroState == PomodoroState.focus) {
                         state.pomodoroState = PomodoroState.rest
                         
-                        if(state.completedPomodoro % UserDefaultsHelper.pomodoroLongRestInterval == 0) {
+                        if(state.completedPomodoro % state.pomodoroInterval == 0) {
                             // long rest time
-                            state.timeRemaining = UserDefaultsHelper.pomodoroLongRestTime
+                            state.timeRemaining = state.longRestTime
                         } else {
                             // rest time
-                            state.timeRemaining = UserDefaultsHelper.pomodoroRestTime
+                            state.timeRemaining = state.restTime
                         }
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
@@ -323,7 +328,7 @@ struct TimerFeature {
                     else if(state.pomodoroState == PomodoroState.rest){
                         state.pomodoroState = PomodoroState.focus
                         // focus time from UserDefaults
-                        state.timeRemaining = UserDefaultsHelper.time
+                        state.timeRemaining = state.focusTime
                         // reset UI
                         state.progress = Double(state.timeRemaining) * Constants.secondToProgress
                         // Positive angle 구해서 rotation angle 구하기

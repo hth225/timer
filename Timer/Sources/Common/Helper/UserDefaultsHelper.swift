@@ -14,6 +14,11 @@ struct UserDefaultsHelper {
         set { UserDefaults.standard.set(newValue, forKey: Constants.timeKey) }
     }
     
+    static var pomodoroFocusTime: Int {
+        get { UserDefaults.standard.integer(forKey: Constants.pomodoroFocusTimeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroFocusTimeKey) }
+    }
+    
     static var pomodoroRestTime: Int {
         get { UserDefaults.standard.integer(forKey: Constants.pomodoroRestTimeKey) }
         set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroRestTimeKey) }
@@ -27,6 +32,11 @@ struct UserDefaultsHelper {
     static var pomodoroLongRestTime: Int {
         get { UserDefaults.standard.integer(forKey: Constants.pomodoroLongRestTimeKey) }
         set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLongRestTimeKey) }
+    }
+    
+    static var pomodoroState: PomodoroState {
+        get { PomodoroState(rawValue: UserDefaults.standard.integer(forKey: Constants.pomodoroStateKey)) ?? PomodoroState.disabled }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: Constants.pomodoroStateKey) }
     }
     
     static var pomodoroLatestNotiDate: Date? {
@@ -56,8 +66,10 @@ struct UserDefaultsHelper {
         set { UserDefaults.standard.set(newValue, forKey: Constants.pomodoroLatestAddedIndex) }
     }
     
-    static var pomodoroState: PomodoroState {
-        get { PomodoroState(rawValue: UserDefaults.standard.integer(forKey: Constants.pomodoroStateKey)) ?? PomodoroState.disabled }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: Constants.pomodoroStateKey) }
-    }
+    
+//    static var pomodoroSetting: PomodoroLocalSetting {
+//        get {
+//            PomodoroLocalSetting(focusTime: UserDefaultsHelper.pomodoroFocusTime, restTime: UserDefaultsHelper.pomodoroRestTime, restInterval: UserDefaultsHelper.pomodoroLongRestInterval, longRestTime: UserDefaultsHelper.pomodoroLongRestTime, state: UserDefaultsHelper.pomodoroState)
+//        }
+//    }
 }

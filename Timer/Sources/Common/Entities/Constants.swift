@@ -11,6 +11,7 @@ import SwiftUI
 struct Constants {
     static let timeKey = "timeKey"
     
+    static let pomodoroFocusTimeKey = "pomodoroFocusTimeKey"
     static let pomodoroStateKey = "pomodoroStateKey"
     static let pomodoroRestTimeKey = "pomodoroRestTimeKey"
     static let pomodoroLongRestIntervalKey = "pomodoroLongRestIntervalKey"
@@ -24,4 +25,5 @@ struct Constants {
     static let backgroundTaskIdentifier = "io.tuist.Timer-background.notification"
     static let pomodoroLatestNotiDate = "pomodoroLatestNotiDate"
     static let pomodoroLatestAddedIndex = "pomodoroLatestAddedIndex"
+    
 }
