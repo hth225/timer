@@ -14,6 +14,11 @@ import SwiftUI
 struct TimerFeature {
     @Dependency(\.continuousClock) var clock
     
+    @Reducer(state: .equatable)
+    enum Path {
+        case setting(SettingFeature)
+    }
+    
     @ObservableState
     struct State: Equatable {
         // 남은 시간
@@ -37,10 +42,14 @@ struct TimerFeature {
         // Completed pomodoro count
         var completedPomodoro = 0
         
+        var time: Int = 0
         var focusTime: Int = 0
         var restTime: Int = 0
         var longRestTime: Int = 0
         var pomodoroInterval = 0
+        
+        // navigation
+        var path = StackState<Path.State>()
     }
     
     enum Action {
@@ -56,8 +65,11 @@ struct TimerFeature {
         
         // pomodoro 를 위한 tick action
         case pomodoroTick
-        
         case flipPomodoroState
+        
+        // navigation
+        case navigateToSetting
+        case path(StackAction<Path.State, Path.Action>)
     }
     
     
@@ -65,9 +77,19 @@ struct TimerFeature {
         Reduce{ state, action in
             switch action {
             case .initTimer:
+                state.time = UserDefaultsHelper.time
+                state.pomodoroState = UserDefaultsHelper.pomodoroState
+                state.focusTime = UserDefaultsHelper.pomodoroFocusTime
+                state.restTime = UserDefaultsHelper.pomodoroRestTime
+                state.longRestTime = UserDefaultsHelper.pomodoroLongRestTime
+                state.pomodoroInterval = UserDefaultsHelper.pomodoroLongRestInterval
+                
+                state.timeRemaining = state.pomodoroState != PomodoroState.disabled ? state.focusTime : state.time
+                
                 state.progress = Double(state.timeRemaining) * Constants.secondToProgress
                 // Positive angle 구해서 rotation angle 구하기
                 state.rotationAngle = Angle(radians: state.progress * (2.0 * .pi))
+                
                 return .none
             case .startTimer:
                 // timer 시작
@@ -78,7 +100,7 @@ struct TimerFeature {
                 
                 if(state.pomodoroState == PomodoroState.active) {
                     state.pomodoroState = PomodoroState.focus
-                    
+                     
                     state.focusTime = UserDefaultsHelper.pomodoroFocusTime
                     state.restTime = UserDefaultsHelper.pomodoroRestTime
                     state.longRestTime = UserDefaultsHelper.pomodoroLongRestTime
@@ -290,7 +312,6 @@ struct TimerFeature {
                 } else {
                     // Timer end
                     state.showAlert = true
-//                    state.isTimerRunning = false
                     state.progress = 0.0
                     state.rotationAngle = Angle(degrees: 0)
                     state.completedPomodoro += 1
@@ -347,7 +368,16 @@ struct TimerFeature {
                 }
                 UserDefaultsHelper.pomodoroState = state.pomodoroState
                 return .none
+            case .navigateToSetting:
+                state.path.append(.setting(SettingFeature.State()))
+                return .none
+            case let .path(action):
+                switch action {
+                default:
+                    return .none
+                }
             }
         }
+        .forEach(\.path, action: \.path)
     }
 }

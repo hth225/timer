@@ -8,11 +8,8 @@ struct TimerApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            TimerView(store: Store(initialState: TimerFeature.State(timeRemaining: UserDefaultsHelper.time)){
-//                TimerFeature()
-//            })
-            SettingView(store: Store(initialState: SettingFeature.State()){
-                SettingFeature()
+            TimerView(store: Store(initialState: TimerFeature.State()){
+                TimerFeature()
             })
             .task {
                 // permission check

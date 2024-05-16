@@ -10,16 +10,14 @@ import ComposableArchitecture
 import Combine
 
 struct TimerView: View {
-    let store: Store<TimerFeature.State, TimerFeature.Action>
-    @ObservedObject private var viewStore: ViewStore<TimerFeature.State, TimerFeature.Action>
+    @State var store: StoreOf<TimerFeature>
     var bag = Set<AnyCancellable>()
     let ringDiameter = 300.0
     
     @State var point = CGPoint()
     
-    init(store: Store<TimerFeature.State, TimerFeature.Action>) {
+    init(store: StoreOf<TimerFeature>) {
         self.store = store
-        self.viewStore = ViewStore(store, observe: { $0 })
         
         // When application goes background
         NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
@@ -33,120 +31,118 @@ struct TimerView: View {
     }
     
     var body: some View {
-        WithPerceptionTracking {
-            VStack {
-                Button(action: {
-                    UNUserNotificationCenter.current().getPendingNotificationRequests(completionHandler: { results in
-                        results.forEach { element in
-                            print("Pending id:\(element.identifier)")
-                        }
-                    })
-                }) {
-                    Text("Completed: \(store.state.completedPomodoro)")
-                        .padding(.bottom, 8)
-                }
-                Button(action: {
-                    store.send(.flipPomodoroState)
-                }) {
-                    Text("\(store.state.pomodoroState)")
-                }
-                .padding(.bottom, 24)
-                ZStack {
-                    Circle()
-                        .stroke(Color(hue: 0.0, saturation: 0.0, brightness: 0.9), lineWidth: 20.0)
-                        .overlay() {
-                            Text(store.state.isTimerRunning ?
-                                 "\(store.state.timeRemaining / 60):\(String(format: "%02d", (store.state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue)))"
-                                 : "\((store.state.timeRemaining / 60))")
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)){
+            WithPerceptionTracking {
+                VStack {
+                    Text(store.pomodoroState != PomodoroState.disabled ? "Pomodoro" : "Timer")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                        .padding(.bottom, 24)
+                    
+                    Button(action: {
+                        UNUserNotificationCenter.current().getPendingNotificationRequests(completionHandler: { results in
+                            results.forEach { element in
+                                print("Pending id:\(element.identifier)")
+                            }
+                        })
+                    }) {
+                        Text("Completed: \(store.state.completedPomodoro)")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                            .padding(.bottom, 24)
+                    }
+                    ZStack {
+                        Circle()
+                            .stroke(Color(hue: 0.0, saturation: 0.0, brightness: 0.9), lineWidth: 20.0)
+                            .overlay() {
+                                Text(store.state.isTimerRunning ?
+                                     "\(store.state.timeRemaining / 60):\(String(format: "%02d", (store.state.timeRemaining.remainderReportingOverflow(dividingBy: 60).partialValue)))"
+                                     : "\((store.state.timeRemaining / 60))")
                                 .font(.system(size: 78, weight: .bold, design:.rounded))
                                 .animation(.linear(duration: 0.1), value: store.state.timeRemaining)
-                        }
-                    
-                    Circle()
-                        .trim(from: 0, to: store.state.progress)
-                        .stroke(Color.red,
-                                style: StrokeStyle(lineWidth: 20.0, lineCap: .round)
-                        )
-                        .rotationEffect(Angle(degrees: -90))
-                        .animation(.linear(duration: 0.05), value: store.state.progress)
-                    
-                    if(!store.state.isTimerRunning) {
+                            }
+                        
                         Circle()
-                            .fill(Color.white)
-                            .shadow(radius: 3)
-                            .frame(width: 21, height: 21)
-                            .offset(y: -ringDiameter / 2.0)
-                            .rotationEffect(store.state.rotationAngle)
-                            .gesture(
-                                DragGesture(minimumDistance: 0.0)
-                                    .onChanged() { value in
-                                        store.send(.sliderChanged(value.location))
-                                        point = value.location
-                                    }
-                                    .onEnded() { _ in
-                                        store.send(.sliderEnded)
-                                    }
+                            .trim(from: 0, to: store.state.progress)
+                            .stroke(Color.red,
+                                    style: StrokeStyle(lineWidth: 20.0, lineCap: .round)
                             )
+                            .rotationEffect(Angle(degrees: -90))
+                            .animation(.linear(duration: 0.05), value: store.state.progress)
+                        
+                        if(!store.state.isTimerRunning) {
+                            Circle()
+                                .fill(Color.white)
+                                .shadow(radius: 3)
+                                .frame(width: 21, height: 21)
+                                .offset(y: -ringDiameter / 2.0)
+                                .rotationEffect(store.state.rotationAngle)
+                                .gesture(
+                                    DragGesture(minimumDistance: 0.0)
+                                        .onChanged() { value in
+                                            store.send(.sliderChanged(value.location))
+                                            point = value.location
+                                        }
+                                        .onEnded() { _ in
+                                            store.send(.sliderEnded)
+                                        }
+                                )
+                        }
                     }
+                    .frame(width: ringDiameter, height: ringDiameter)
                 }
-                .frame(width: ringDiameter, height: ringDiameter)
-            }
-            .padding(.vertical, 40)
-            .padding()
-            
-//            Text("Location:\(point.x)")
-//                .font(.title2)
-//                .padding(.horizontal, 16)
-//            
-//            Text("Progress:\(store.state.progress)")
-//                .font(.title2)
-//                .padding(.horizontal, 16)
-//            
-//            
-//            Text("Progress:\(store.state.rotationAngle.degrees)")
-//                .font(.title2)
-//                .padding(.horizontal, 16)
-//            
-//            Text("\(store.state.timeRemaining)")
-            
-//            Button(action: {
-//                viewStore.send(.startTimer)
-//            }) {
-//                Image(systemName: "play.fill")
-//                    .foregroundStyle(.red)
-//                    .frame(width: 50, height: 50)
-//            }
-            HStack {
-                // Pomodoro 이며, timer 작동중이면 일시정지 숨기기.
-                if(!(store.state.pomodoroState != PomodoroState.disabled && store.state.isTimerRunning)) {
+                .padding(.vertical, 40)
+                .padding()
+                
+                HStack {
+                    // Pomodoro 이며, timer 작동중이면 일시정지 숨기기.
+                    if(!(store.state.pomodoroState != PomodoroState.disabled && store.state.isTimerRunning)) {
+                        Spacer()
+                        Button(action: {
+                            store.send(.pauseOrResumeTimer)
+                        }) {
+                            Image(systemName: store.isTimerRunning ? "pause.fill" : "play.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .foregroundStyle(.red)
+                                .frame(width: 50, height: 50)
+                        }
+                        .disabled(store.state.timeRemaining <= 0)
+                    }
                     Spacer()
                     Button(action: {
-                        viewStore.send(.pauseOrResumeTimer)
+                        store.send(.stopTimer)
                     }) {
-                        Image(systemName: viewStore.state.isTimerRunning ? "pause.fill" : "play.fill")
+                        Image(systemName: "stop.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(!store.state.isTimerRunning ? .gray :.red)
                             .frame(width: 50, height: 50)
                     }
-                    .disabled(store.state.timeRemaining <= 0)
+                    .disabled(!store.isTimerRunning)
+                    Spacer()
+                    if(!(store.pomodoroState != PomodoroState.disabled && store.isTimerRunning)) {
+                        Button(action: {
+                            store.send(.navigateToSetting)
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .foregroundColor(.red)
+                                .frame(width: 50, height: 50)
+                        }
+                        Spacer()
+                    }
                 }
-                Spacer()
-                Button(action: {
-                    viewStore.send(.stopTimer)
-                }) {
-                    Image(systemName: "stop.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .foregroundStyle(!store.state.isTimerRunning ? .gray :.red)
-                        .frame(width: 50, height: 50)
-                }
-                .disabled(!store.state.isTimerRunning)
-                Spacer()
             }
-        }
-        .task {
-            store.send(.initTimer)
+            .onAppear {
+                store.send(.initTimer)
+            }
+        }destination: { store in
+            switch store.case {
+            case let .setting(store):
+                SettingView(store: store)
+            }
         }
     }
 }
