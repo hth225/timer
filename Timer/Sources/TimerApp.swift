@@ -3,37 +3,18 @@ import ComposableArchitecture
 import BackgroundTasks
 import Combine
 
-@main
-struct TimerApp: App {
-    
-    var body: some Scene {
-        WindowGroup {
-            TimerView(store: Store(initialState: TimerFeature.State()){
-                TimerFeature()
-            })
-            .task {
-                // permission check
-                if (!(await PermissionMananger.notiPermissionStatus())) {
-                    try? await PermissionMananger.requestNotiPermission()
-                }
-            }
-            .onAppear {
-                
-                // set default userDefault values
-                UserDefaults.standard.register(defaults: [
-                    Constants.timeKey : 1500,
-                    Constants.pomodoroFocusTimeKey : 1500,
-                    Constants.pomodoroRestTimeKey : 300,
-                    Constants.pomodoroLongRestIntervalKey : 3,
-                    Constants.pomodoroLongRestTimeKey : 900,
-                ])
-                
-                BGTaskScheduler.shared.register(forTaskWithIdentifier: Constants.backgroundTaskIdentifier, using: nil) { task in
-                    self.handleAppRefresh(task: task as! BGAppRefreshTask)
-                }
-            }
+
+// no changes in your AppDelegate class
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Constants.backgroundTaskIdentifier, using: nil) { task in
+            self.handleAppRefresh(task: task as! BGAppRefreshTask)
         }
+        
+        return true
     }
+    
     
     func handleAppRefresh(task: BGAppRefreshTask) {
         // Schedule a new refresh task.
@@ -56,5 +37,40 @@ struct TimerApp: App {
         
         task.setTaskCompleted(success: true)
         
+    }
+}
+
+@main
+struct TimerApp: App {
+    
+    init() {
+        
+    }
+    
+    // inject into SwiftUI life-cycle via adaptor !!!
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    var body: some Scene {
+        WindowGroup {
+            TimerView(store: Store(initialState: TimerFeature.State()){
+                TimerFeature()
+            })
+            .task {
+                
+                // set default userDefault values
+                UserDefaults.standard.register(defaults: [
+                    Constants.timeKey : 1500,
+                    Constants.pomodoroFocusTimeKey : 1500,
+                    Constants.pomodoroRestTimeKey : 300,
+                    Constants.pomodoroLongRestIntervalKey : 3,
+                    Constants.pomodoroLongRestTimeKey : 900,
+                ])
+                
+                // permission check
+                if (!(await PermissionMananger.notiPermissionStatus())) {
+                    try? await PermissionMananger.requestNotiPermission()
+                }
+            }
+        }
     }
 }
