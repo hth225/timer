@@ -39,17 +39,19 @@ struct TimerView: View {
                         .foregroundColor(.red)
                         .padding(.bottom, 24)
                     
-                    Button(action: {
-                        UNUserNotificationCenter.current().getPendingNotificationRequests(completionHandler: { results in
-                            results.forEach { element in
-                                print("Pending id:\(element.identifier)")
-                            }
-                        })
-                    }) {
-                        Text("Completed: \(store.state.completedPomodoro)")
-                            .font(.headline)
-                            .foregroundColor(.red)
-                            .padding(.bottom, 24)
+                    if(store.pomodoroState != PomodoroState.disabled) {
+                        Button(action: {
+                            UNUserNotificationCenter.current().getPendingNotificationRequests(completionHandler: { results in
+                                results.forEach { element in
+                                    print("Pending id:\(element.identifier)")
+                                }
+                            })
+                        }) {
+                            Text("Completed: \(store.state.completedPomodoro)")
+                                .font(.headline)
+                                .foregroundColor(.red)
+                                .padding(.bottom, 24)
+                        }
                     }
                     ZStack {
                         Circle()
@@ -121,7 +123,7 @@ struct TimerView: View {
                     }
                     .disabled(!store.isTimerRunning)
                     Spacer()
-                    if(!(store.pomodoroState != PomodoroState.disabled && store.isTimerRunning)) {
+                    if(!store.isTimerRunning) {
                         Button(action: {
                             store.send(.navigateToSetting)
                         }) {
